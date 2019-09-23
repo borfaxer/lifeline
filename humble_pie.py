@@ -13,9 +13,6 @@
   2) My hosting provider, Bluehost, only has Python 2 available.
      They should have Python 3 available before too long, at
      which point I can update.
-
-  TODO: shove most of the settings into a config file and read
-  that instead of getting parameters.
 '''
 
 import argparse
@@ -26,30 +23,31 @@ import pyspeedtest
 import sys
 import time
 
-description = 'Humble Pie'
-log_path = '/var/log/lifeline'
-log_file = log_path + '/humble_pie.log'
-default_log_level = logging.INFO
-log_format = '%(asctime)s %(levelname)s: %(message)s'
+description = "Humble Pie"
 Mbps = 1024 * 1024
 
 
 def main():
 
-  # Double check the logging path exists, create if it doesn't
-  log_path
-  if not os.path.exists(log_path):
-    os.makedirs(log_path)
-
   parser = argparse.ArgumentParser(description=description)
-  parser.add_argument('--pits_host', required=False, default = None, help='Host to report results to')
-  parser.add_argument('--log_level', required=False, default=default_log_level, help='Log level to record')
+  parser.add_argument('--conf', required=False, default='/etc/conf/lifeline/lifeline_conf.json', help='config file path')
 
   args = parser.parse_args()
 
-  logging.basicConfig(filename=log_file, format=log_format, level=default_log_level)
+  config = json.load(open(args.conf, 'r'))
+
+  # Double check the logging path exists, create if it doesn't
+
+  if not os.path.exists(config['logging']['path']):
+    os.makedirs(config['logging']['path'])
+
+  log_file = config['logging']['path'] + '/' + config['logging']['filename']['humble_pie']
+  logging.basicConfig(filename=log_file,
+                      format=config['logging']['format'],
+                      level=logging.INFO)
   logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-  logging.info('Starting %s with logging level set to %s', description, default_log_level)
+  logging.info('Starting %s with logging level set to %s', description, logging.getLevelName(logging.getLogger().getEffectiveLevel()))
+  logging.info('Read config file %s', args.conf)
 
   '''
     There are two activities to perform:
@@ -67,19 +65,19 @@ def main():
     Connect to Pie In The Sky (PITS) & Report
   '''
   connected = False
-  if args.pits_host:
+  if 'pits_host' in config.keys():
     # TODO: connect and report
     logging.info('No PITS host to connect to.')
   else:
-    args.pits_host = 'Missing PITS Host'
+    config['pits_host'] = 'Missing PITS Host'
 
   '''
     Format the data in json so it'll be easy to pick out of the
     log if we need that and easy to pass to Pie In The Sky
   '''
-  announce_results_string = 'Reported to {}'.format(args.pits_host)
+  announce_results_string = 'Reported to {}'.format(config['pits_host'])
   if not connected:
-    announce_results_string = 'Could not report to {}'.format(args.pits_host)
+    announce_results_string = 'Could not report to {}'.format(config['pits_host'])
 
   logging.info('%s: %s', announce_results_string, json.dumps(stats))
 
