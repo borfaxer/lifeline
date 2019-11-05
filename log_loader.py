@@ -91,7 +91,7 @@ def main():
                       source_ip,
                       source_machine,
                       jd['test_server'])
-        logging.info('Inserting data for timestamp %s into %s:%s:%s', jd['timestamp'], config['mysql']['host'], config['mysql']['database'], 'lifeline_data')
+        logging.info('Inserting data for timestamp %s into %s:%s:%s', formatted_time, config['mysql']['host'], config['mysql']['database'], 'lifeline_data')
         db_cursor.execute(insert_sql, data_tuple)
 
   db.commit()
