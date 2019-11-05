@@ -54,12 +54,22 @@ def main():
     1) Do a connectivity / bandwidth check (speed test)
     2) Report the values (ping / download / upload, server, timestamp)
   '''
-  st = pyspeedtest.SpeedTest()
-  stats = dict(test_server = st.host)
-  stats['ping']      = st.ping()
-  stats['downwidth'] = st.download() / Mbps
-  stats['upwidth']   = st.upload() / Mbps
-  stats['timestamp'] = time.time()
+  stats = {}
+  try:
+    st = pyspeedtest.SpeedTest()
+    stats['test_server'] = st.host
+    stats['ping']        = st.ping()
+    stats['downwidth']   = st.download() / Mbps
+    stats['upwidth']     = st.upload() / Mbps
+  except Exception as e:
+    error_message = str(e)
+    logging.error('Error: %s', error_message)
+    stats['test_server'] = error_message.split('\'')[1]
+    stats['ping']        = 0.0
+    stats['downwidth']   = 0.0
+    stats['upwidth']     = 0.0
+
+  stats['timestamp']     = time.time()
 
   '''
     Connect to Pie In The Sky (PITS) & Report
