@@ -19,7 +19,7 @@ import argparse
 import json
 import logging
 import os
-import pyspeedtest
+from pyspeedtest import SpeedTest
 import sys
 import time
 
@@ -56,7 +56,7 @@ def main():
   '''
   stats = {}
   try:
-    st = pyspeedtest.SpeedTest()
+    st = SpeedTest()
     stats['test_server'] = st.host
     stats['ping']        = st.ping()
     stats['downwidth']   = st.download() / Mbps
