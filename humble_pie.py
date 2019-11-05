@@ -70,6 +70,7 @@ def main():
     stats['upwidth']     = 0.0
 
   stats['timestamp']     = time.time()
+  stats['source_machine']= config['source_machine']
 
   '''
     Connect to Pie In The Sky (PITS) & Report
