@@ -10,11 +10,12 @@
 '''
 
 import argparse
+from datetime import datetime
 import json
 import logging
 import mysql.connector
-#import os
-#import sys
+import os
+import sys
 #import time
 
 description = "Log Loader"
@@ -73,14 +74,23 @@ def main():
 
   with open(hp_log_filename, 'r') as hp_log:
     for line in hp_log:
-      if line.contains('Your IP: '):
+      if 'Your IP: ' in line:
         old_source_ip = source_ip
         source_ip = line.split(':')[4].strip()
         if old_source_ip != source_ip:
           logging.info('Changing source_ip from %s to %s', old_source_ip, source_ip)
-      elif line.contains("Could not report to "):
-        jd = json.loads(line.split(':')[4])
-        data_tuple = (jd['timestamp'], jd['ping'], jd['downwidth'], jd['upwidth'], source_ip, source_machine, jd['test_server'])
+      elif "Could not report to " in line:
+        logging.info('Parsing data: \'%s\'', '{' + line.split('{')[1])
+        jd = json.loads('{' + line.split('{')[1])
+        timestamp_object = datetime.fromtimestamp(jd['timestamp'])
+        formatted_time = timestamp_object.strftime('%Y-%m-%d %H:%M:%S')
+        data_tuple = (formatted_time,
+                      jd['ping'],
+                      jd['downwidth'],
+                      jd['upwidth'],
+                      source_ip,
+                      source_machine,
+                      jd['test_server'])
         logging.info('Inserting data for timestamp %s into %s:%s:%s', jd['timestamp'], config['mysql']['host'], config['mysql']['database'], 'lifeline_data')
         db_cursor.execute(insert_sql, data_tuple)
 
