@@ -59,6 +59,7 @@ def main():
                                password = config['mysql']['password'],
                                database = config['mysql']['database'])
   db_cursor = db.cursor()
+  last_entry_cursor = db.cursor(buffered=True)
 
   # IGNORE tells MySQL to skip duplicate rows without erroring
 
@@ -70,6 +71,15 @@ def main():
   source_machine = config['source_machine']
   logging.info('Using \'%s\' as the source machine', source_machine)
 
+  last_entry_sql = "SELECT max(timestamp) FROM lifeline_data WHERE source_machine LIKE '{}'".format(source_machine)
+  print('Query: ', last_entry_sql)
+  last_entry_cursor.execute(last_entry_sql)
+  last_entry = None
+  for (timestamp, ) in last_entry_cursor:
+    last_entry = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+  print('Last entry object: ', last_entry)
+  logging.info('Last entry in the DB for %s is from %s', source_machine, last_entry)
+
   log_data = []
 
   with open(hp_log_filename, 'r') as hp_log:
@@ -80,19 +90,20 @@ def main():
         if old_source_ip != source_ip:
           logging.info('Changing source_ip from %s to %s', old_source_ip, source_ip)
       elif "Could not report to " in line:
-        logging.info('Parsing data: \'%s\'', '{' + line.split('{')[1])
+        #logging.info('Parsing data: \'%s\'', '{' + line.split('{')[1])
         jd = json.loads('{' + line.split('{')[1])
         timestamp_object = datetime.fromtimestamp(jd['timestamp'])
         formatted_time = timestamp_object.strftime('%Y-%m-%d %H:%M:%S')
-        data_tuple = (formatted_time,
-                      jd['ping'],
-                      jd['downwidth'],
-                      jd['upwidth'],
-                      source_ip,
-                      source_machine,
-                      jd['test_server'])
-        logging.info('Inserting data for timestamp %s into %s:%s:%s', formatted_time, config['mysql']['host'], config['mysql']['database'], 'lifeline_data')
-        db_cursor.execute(insert_sql, data_tuple)
+        if formatted_time > last_entry:
+          data_tuple = (formatted_time,
+                        jd['ping'],
+                        jd['downwidth'],
+                        jd['upwidth'],
+                        source_ip,
+                        source_machine,
+                        jd['test_server'])
+          logging.info('Inserting data for timestamp %s into %s:%s:%s', formatted_time, config['mysql']['host'], config['mysql']['database'], 'lifeline_data')
+          db_cursor.execute(insert_sql, data_tuple)
 
   db.commit()
   db_cursor.close()
