@@ -72,12 +72,10 @@ def main():
   logging.info('Using \'%s\' as the source machine', source_machine)
 
   last_entry_sql = "SELECT max(timestamp) FROM lifeline_data WHERE source_machine LIKE '{}'".format(source_machine)
-  print('Query: ', last_entry_sql)
   last_entry_cursor.execute(last_entry_sql)
   last_entry = None
   for (timestamp, ) in last_entry_cursor:
     last_entry = timestamp.strftime('%Y-%m-%d %H:%M:%S')
-  print('Last entry object: ', last_entry)
   logging.info('Last entry in the DB for %s is from %s', source_machine, last_entry)
 
   log_data = []
