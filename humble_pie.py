@@ -26,6 +26,20 @@ import time
 description = "Humble Pie"
 Mbps = 1024 * 1024
 
+log_levels = {
+  'CRITICAL'  : logging.CRITICAL,
+  'ERORR'     : logging.ERROR,
+  'WARNING'   : logging.WARNING,
+  'INFO'      : logging.INFO,
+  'DEBUG'     : logging.DEBUG
+}
+
+def close_handlers(logger):
+  handlers = logger.handlers[:]
+  for handler in handlers:
+      handler.close()
+      logger.removeHandler(handler)
+
 
 def main():
 
@@ -44,7 +58,7 @@ def main():
   log_file = config['logging']['path'] + '/' + config['logging']['filename']['humble_pie']
   logging.basicConfig(filename=log_file,
                       format=config['logging']['format'],
-                      level=logging.INFO)
+                      level=config['logging']['level'])
   logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
   logging.info('Starting %s with logging level set to %s', description, logging.getLevelName(logging.getLogger().getEffectiveLevel()))
   logging.info('Read config file %s', args.conf)
@@ -64,10 +78,10 @@ def main():
   except Exception as e:
     error_message = str(e)
     logging.error('Error: %s', error_message)
-    stats['test_server'] = error_message.split('\'')[1]
-    stats['ping']        = 0.0
-    stats['downwidth']   = 0.0
-    stats['upwidth']     = 0.0
+    stats['test_server'] = getattr(st, 'host', error_message.split('\'')[1])
+    stats['ping']        = -1.0
+    stats['downwidth']   = -1.0
+    stats['upwidth']     = -1.0
 
   stats['timestamp']     = time.time()
   stats['source_machine']= config['source_machine']
@@ -92,6 +106,7 @@ def main():
 
   logging.info('%s: %s', announce_results_string, json.dumps(stats))
 
+  close_handlers(logging)
 
 
 if __name__ == '__main__':
