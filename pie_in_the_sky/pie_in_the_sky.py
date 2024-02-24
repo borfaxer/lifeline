@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
-  Humble Pie
+  Pie In The Sky
   Written by Jacob Sorensen
-  22 September 2019
+  23 September 2019
 
   I wanted to write this in Python 3, but
   got stopped by two things:
@@ -19,26 +19,10 @@ import argparse
 import json
 import logging
 import os
-from pyspeedtest import SpeedTest
 import sys
 import time
 
-description = "Humble Pie"
-Mbps = 1024 * 1024
-
-log_levels = {
-  'CRITICAL'  : logging.CRITICAL,
-  'ERROR'     : logging.ERROR,
-  'WARNING'   : logging.WARNING,
-  'INFO'      : logging.INFO,
-  'DEBUG'     : logging.DEBUG
-}
-
-def close_handlers(logger):
-  handlers = logger.handlers[:]
-  for handler in handlers:
-      handler.close()
-      logger.removeHandler(handler)
+description = "Pie In The Sky"
 
 
 def main():
@@ -55,39 +39,25 @@ def main():
   if not os.path.exists(config['logging']['path']):
     os.makedirs(config['logging']['path'])
 
-  log_file = config['logging']['path'] + '/' + config['logging']['filename']['humble_pie']
+  log_file = config['logging']['path'] + '/' + config['logging']['filename']['pie_in_the_sky']
   logging.basicConfig(filename=log_file,
                       format=config['logging']['format'],
-                      level=config['logging']['level'])
+                      level=logging.INFO)
   logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
   logging.info('Starting %s with logging level set to %s', description, logging.getLevelName(logging.getLogger().getEffectiveLevel()))
   logging.info('Read config file %s', args.conf)
 
   '''
-    There are two activities to perform:
-    1) Do a connectivity / bandwidth check (speed test)
-    2) Report the values (ping / download / upload, server, timestamp)
+    - Set up REST API
+    - Respond to data posted (insert into DB)
+    - Send an alert text if no data is received in more than 3 minutes
+      - Don't send more than 1 alert text until:
+        Data has started to come in again
+        It's been more than three hours
   '''
-  stats = {}
-  try:
-    st = SpeedTest()
-    stats['test_server'] = st.host
-    stats['ping']        = st.ping()
-    stats['downwidth']   = st.download() / Mbps
-    stats['upwidth']     = st.upload() / Mbps
-  except Exception as e:
-    error_message = str(e)
-    logging.error('Error: %s', error_message)
-    stats['test_server'] = getattr(st, 'host', error_message.split('\'')[1])
-    stats['ping']        = 0.0
-    stats['downwidth']   = 0.0
-    stats['upwidth']     = 0.0
-
-  stats['timestamp']     = time.time()
-  stats['source_machine']= config['source_machine']
 
   '''
-    Connect to Pie In The Sky (PITS) & Report
+    Connect to Pie Hole & Store the data
   '''
   connected = False
   if 'pits_host' in config.keys():
@@ -106,7 +76,6 @@ def main():
 
   logging.info('%s: %s', announce_results_string, json.dumps(stats))
 
-  close_handlers(logging)
 
 
 if __name__ == '__main__':
